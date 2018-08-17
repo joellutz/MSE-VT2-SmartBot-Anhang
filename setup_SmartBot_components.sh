@@ -61,7 +61,7 @@ gazebo --version
 # a way to get a newer version of pip (not really needed maybe):
 # curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
 # sudo python get-pip.py
-sudo apt-get install python-pip
+sudo apt-get install -y python-pip
 sudo pip install numpy==1.14.5
 sudo pip install --upgrade cryptography
 sudo python -m easy_install --upgrade pyOpenSSL
