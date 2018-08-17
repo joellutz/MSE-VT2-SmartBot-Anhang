@@ -1,22 +1,35 @@
-# Installation of the whole setup from the NTB project SmartBot (Joël Lutz, August 2018)
+# Installation of the whole setup from the NTB project SmartBot: Robot with Reinforcement Learning (Joël Lutz, August 2018)
 # Installed software: ROS, Gazebo, OpenAI Gym, gym-gazebo, MoveIt, OpenAI Gym baselines,
 # tensorflow, keras, freenect, arbotix drivers, pincher arm packages etc.
 
-# refresh apt
-sudo apt-get update
-sudo apt-get upgrade # takes forever
+# No guarantee for completeness, that it will work or that only necessary things will be installed!!
+# Better take this script as a guideline (just like the pirate codex).
 
-# ++++++++++++ install ROS ++++++++++++
+
+# POSSIBLE ERRORS / CONFUSIONS WHEN RUNNING AN RL ALGORITHM WITH THE PINCHER ENVIRONMENT
+
+# if you can't see a kinect camera in Gazebo, don't worry. Check the ~/Pictures/ folder where the simulated Kinect camrea
+# saves all of its depth images. If you see some pictures in there after (or during) running a RL algorithm, everything should be fine.
+
+# if an error like "RuntimeError: Unable to connect to move_group action server 'move_group' within allotted time (5s)" occurs
+# after starting an RL algorithm (e.g. ~/Documents/gym-gazebo/examples/pincher_arm/smartbot_pincher_kinect_ddpg.py),
+# try starting it again (after killgazebogym) and/or run the installing MoveIt part again.
+
+# ++++++++++++ refresh apt ++++++++++++
+sudo apt-get update
+sudo apt-get upgrade -y # takes forever
+
+# ++++++++++++ install ROS Kinetic ++++++++++++
 sudo sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros-latest.list'
 sudo apt-key adv --keyserver hkp://ha.pool.sks-keyservers.net:80 --recv-key 421C365BD9FF1F717815A3895523BAEEB01FA116
 sudo apt-get update
-sudo apt-get install ros-kinetic-desktop # takes forever
+sudo apt-get install -y ros-kinetic-desktop # takes forever
 sudo rosdep init
 rosdep update
 echo "# For ROS" >> ~/.bashrc
 echo "source /opt/ros/kinetic/setup.bash" >> ~/.bashrc
 source ~/.bashrc
-sudo apt-get install python-rosinstall python-rosinstall-generator python-wstool build-essential
+sudo apt-get install -y python-rosinstall python-rosinstall-generator python-wstool build-essential
 # checking ROS installation
 printenv | grep ROS
 # should yield:
@@ -28,24 +41,35 @@ printenv | grep ROS
 # ROS_DISTRO=kinetic
 # ROS_ETC_DIR=/opt/ros/kinetic/etc/ros
 
-# ++++++++++++ install Gazebo 7 ++++++++++++
-sudo apt remove '.*gazebo.*' '.*sdformat.*' '.*ignition-.*'
+# ++++++++++++ install Gazebo 8 ++++++++++++
+sudo apt remove -y '.*gazebo.*' '.*sdformat.*' '.*ignition-.*'
 sudo sh -c 'echo "deb http://packages.osrfoundation.org/gazebo/ubuntu-stable `lsb_release -cs` main" > /etc/apt/sources.list.d/gazebo-stable.list'
 # alternative mirror site: sudo sh -c 'echo "deb http://apt-mirror.jderobot.org/osrf-gazebo/ubuntu/ `lsb_release -cs` main" > /etc/apt/sources.list.d/gazebo-stable.list'
 wget http://packages.osrfoundation.org/gazebo.key -O - | sudo apt-key add -
 sudo apt-get update
-sudo apt-get install gazebo7
-sudo apt-get install ros-kinetic-gazebo-ros-pkgs ros-kinetic-gazebo-ros-control
+sudo apt-get install -y gazebo8																# for gazebo 7: sudo apt-get install -y gazebo7
+sudo apt-get install -y ros-kinetic-gazebo8-ros-pkgs ros-kinetic-gazebo8-ros-control		# for gazebo 7: sudo apt-get install -y ros-kinetic-gazebo-ros-pkgs ros-kinetic-gazebo-ros-control
 # check gazebo
 gazebo --version
 # should yield:
-# Gazebo multi-robot simulator, version 7.14.0
+# Gazebo multi-robot simulator, version 8.6.0
 # Copyright (C) 2012 Open Source Robotics Foundation.
 # Released under the Apache 2 License.
 # http://gazebosim.org
 
-# no matter what, reboot
-sudo reboot
+# ++++++++++++ installing pip ++++++++++++
+# a way to get a newer version of pip (not really needed maybe):
+# curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+# sudo python get-pip.py
+sudo apt-get install python-pip
+sudo pip install numpy==1.14.5
+sudo pip install --upgrade cryptography
+sudo python -m easy_install --upgrade pyOpenSSL
+
+# checking pip installation
+pip -V
+# should yield:
+# pip 8.1.1 from /usr/local/lib/python2.7/dist-packages/pip (python 2.7)
 
 # ++++++++++++ install Visual Studio Code ++++++++++++
 sudo add-apt-repository -y "deb https://packages.microsoft.com/repos/vscode stable main"
@@ -54,16 +78,10 @@ sudo apt update
 sudo apt -y install code
 # install python extension in Visual Studio Code
 code --install-extension ms-python.python
-# install pylint (for Visual Studio Code)
-sudo pip install -U "pylint<2.0.0"
+sudo pip install -U "pylint<2.0.0"									# with newer pip: sudo pip install --ignore-installed -U "pylint<2.0.0"
 
-# ++++++++++++ installing OpenAI Gym (and pip) ++++++++++++
-sudo apt-get install -y python-dev python-pip python3-dev python3-pip python3-numpy python3-wheel python-numpy python-dev cmake zlib1g-dev libjpeg-dev xvfb libav-tools xorg-dev python-opengl libboost-all-dev libsdl2-dev swig
-
-sudo apt-get remove python-pip
-curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
-sudo python get-pip.py
-sudo python3 get-pip.py
+# ++++++++++++ installing OpenAI Gym ++++++++++++
+sudo apt-get install -y python-dev python3-dev python3-numpy python3-wheel python-numpy python-dev cmake zlib1g-dev libjpeg-dev xvfb libav-tools xorg-dev python-opengl libboost-all-dev libsdl2-dev swig
 
 cd ~/Documents
 git clone https://github.com/openai/gym.git
@@ -73,10 +91,10 @@ sudo pip install -e .
 cd
 
 # ++++++++++++ installing gym-gazebo (with the pincher environment) ++++++++++++
-sudo pip3 install rospkg catkin_pkg
-sudo apt-get install python3-pyqt4
+sudo pip install rospkg catkin_pkg
+sudo apt-get install -y python3-pyqt4
 
-sudo apt-get install \
+sudo apt-get install -y \
 cmake gcc g++ qt4-qmake libqt4-dev \
 libusb-dev libftdi-dev \
 python3-defusedxml python3-vcstool \
@@ -116,13 +134,7 @@ cd
 
 # ++++++++++++ install MoveIt ++++++++++++
 sudo apt-get install -y ros-kinetic-moveit
-sudo apt-get install ros-kinetic-joint-state-controller
-sudo apt-get install ros-kinetic-ros-control ros-kinetic-ros-controllers
-# maybe needed
-# rosdep update
-# sudo apt-get update
-# sudo apt-get dist-upgrade
-# sudo apt-get install ros-kinetic-catkin python-catkin-tools
+sudo apt-get install -y ros-kinetic-ros-control ros-kinetic-ros-controllers
 
 # ++++++++++++ install OpenAI Gym baselines (with the code for some pincher environment algorithms) ++++++++++++
 sudo apt-get update && sudo apt-get install cmake libopenmpi-dev python3-dev zlib1g-dev
@@ -133,41 +145,22 @@ sudo pip install -e .
 
 cd
 
-# ++++++++++++ install tensorflow ++++++++++++
-
-# sudo apt-get install python-pip python-dev
-# sudo pip install -U pip
-# sudo pip install -U tensorflow # ging nicht (Fehlermeldung: Cannot uninstall 'enum34'. It is a distutils installed project and thus we cannot accurately determine which files belong to it which would lead to only a partial uninstall.)
-# ging auch nicht.
-# sudo pip install --upgrade https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.10.0-cp27-none-linux_x86_64.whl
-
-# sudo python get-pip.py
-# sudo pip install --ignore-installed tensorflow
-# sudo pip install testresources
+# ++++++++++++ checking tensorflow ++++++++++++
 # sudo pip uninstall tensorflow
-
-# needed?
-# sudo apt-get remove python-pip python-dev
-# sudo apt-get install python-pip python-dev
-
-# maybe after all this is all we need (from https://github.com/pypa/pip/issues/5373#issuecomment-392742141)
-sudo easy_install pip
-sudo pip uninstall tensorflow
-sudo pip install tensorflow==1.5
+# sudo pip install tensorflow==1.5
 # checking tensorflow installation
 python -c "import tensorflow as tf; print(tf.__version__)"
-# should yield
-# 1.5.0
+# should yield:
+# 1.10.0
 
 # ++++++++++++ install keras ++++++++++++
 sudo pip install keras
 
 # ++++++++++++ install freenect (drivers for real kinect camera) ++++++++++++
-sudo apt-get install ros-kinetic-freenect-launch
+sudo apt-get install -y ros-kinetic-freenect-launch
 
-# ++++++++++++ install catkin (not really necessary, should already be shipped with ROS) ++++++++++++
-sudo apt-get install ros-kinetic-catkin
-sudo apt-get install python-catkin-tools # this may me necessary
+# ++++++++++++ install catkin ++++++++++++
+sudo apt-get install -y python-catkin-tools
 
 
 # ++++++++++++ getting the pincher arm packages ++++++++++++
@@ -190,3 +183,12 @@ cd ..
 catkin build
 echo "source ~/Documents/arbotix/devel/setup.bash" >> ~/.bashrc
 source ~/.bashrc
+
+# ++++++++++++ getting the keras-rl repository (only needed for one ddpg implementation: ~/Documents/gym-gazebo/examples/pincher_arm/smartbot_pincher_kinect_ddpg3_keras.py) ++++++++++++
+cd ~/Documents
+git clone https://github.com/keras-rl/keras-rl.git
+cd keras-rl
+python setup.py install
+
+# ++++++++++++ reboot ++++++++++++
+sudo reboot
